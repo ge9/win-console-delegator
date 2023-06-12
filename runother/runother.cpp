@@ -4,14 +4,8 @@
 #include<thread>
 #include<future>
 DWORD pipid = 0;
-HANDLE childProcess;
-HANDLE stdinmy;
-INPUT_RECORD inputs[100];
-DWORD written;
-std::future<void> wawait;
-void foo() {
-	std::this_thread::sleep_for(std::chrono::milliseconds(100)); WriteConsoleInput(GetStdHandle(STD_INPUT_HANDLE), inputs, 4, &written); FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
-}
+#define MAX_NAME_LEN 2000
+
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 {
 	if (dwCtrlType == CTRL_C_EVENT) {
@@ -23,9 +17,9 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 
 int main()
 {
-	WCHAR my_name[2000];
+	WCHAR my_name[MAX_NAME_LEN];
 	GetModuleFileNameW(NULL, my_name, ARRAYSIZE(my_name));
-	my_name[wcslen(my_name) - 3] = L't'; my_name[wcslen(my_name) - 1] = L't';	//exe -> txt
+	my_name[wcslen(my_name) - 3] = L't'; my_name[wcslen(my_name) - 1] = L't';	//exe -> txt, com -> tot
 	std::wstring wbuffer;
 	FILE* f;
 	_wfopen_s(&f, my_name, L"rt, ccs=UTF-8");
@@ -62,16 +56,15 @@ int main()
 	PROCESS_INFORMATION pi;
 	ZeroMemory(&pi, sizeof(pi));
 	CreateProcess(NULL, newcmd, NULL, NULL, TRUE, CREATE_NEW_PROCESS_GROUP, NULL, NULL, &si, &pi);
-	childProcess = pi.hProcess;
 	pipid = pi.dwProcessId;
 
-	DWORD r = WaitForSingleObject(childProcess, INFINITE);
+	DWORD r = WaitForSingleObject(pi.hProcess, INFINITE);
 	switch (r) {
 	case WAIT_OBJECT_0: break;
 	default: printf("wait failed; exit code %d\n", r); return -1;
 	}
 	DWORD exitCode;
-	if (!GetExitCodeProcess(childProcess, &exitCode)) {
+	if (!GetExitCodeProcess(pi.hProcess, &exitCode)) {
 		printf("GetExitCodeProcess failed"); return -1;
 	}
 	delete[] newcmd;
