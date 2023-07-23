@@ -1,7 +1,7 @@
 #include <string>
 #include <windows.h>
 #include<io.h>
-#define MAX_NAME_LEN 2000
+#include "..\_header.h"
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hPrevInst,
     LPWSTR lpCmdLine, int intShowCmd)

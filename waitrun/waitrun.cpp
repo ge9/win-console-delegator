@@ -1,8 +1,9 @@
-﻿#include <string>
+#include <string>
 #include <windows.h>
 #include<io.h>
 #include<thread>
 #include<future>
+#include <conio.h>
 #include "..\_header.h"
 DWORD pipid = 0;
 
@@ -17,24 +18,8 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
 
 int main()
 {
-	WCHAR my_name[MAX_NAME_LEN];
-	GetModuleFileNameW(NULL, my_name, ARRAYSIZE(my_name));
-	my_name[wcslen(my_name) - 3] = L't'; my_name[wcslen(my_name) - 1] = L't';	//exe -> txt, com -> tot
-	std::wstring wbuffer;
-	FILE* f;
-	_wfopen_s(&f, my_name, L"rt, ccs=UTF-8");
-	if (f == NULL) return -1;
-	long long filesize = _filelengthi64(_fileno(f));
-	if (filesize < 0) { fclose(f); return -1; }
-
 	WCHAR* s = GetCommandLine();
 	s = removeExecPath(s);
-	WCHAR* newcmd = new WCHAR[filesize + wcslen(s) + 1];
-	size_t wchars_read = fread(newcmd, sizeof(wchar_t), filesize, f);
-	newcmd[filesize] = 0;
-	wcscat_s(newcmd, filesize + wcslen(s) + 1, s);
-	fclose(f);
-
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)HandlerRoutine, TRUE);
 
 	//prepare STARTUPINFO
@@ -47,7 +32,7 @@ int main()
 	si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 	PROCESS_INFORMATION pi;
 	ZeroMemory(&pi, sizeof(pi));
-	CreateProcess(NULL, newcmd, NULL, NULL, TRUE, CREATE_NEW_PROCESS_GROUP, NULL, NULL, &si, &pi);
+	CreateProcess(NULL, s, NULL, NULL, TRUE, CREATE_NEW_PROCESS_GROUP, NULL, NULL, &si, &pi);
 	pipid = pi.dwProcessId;
 
 	DWORD r = WaitForSingleObject(pi.hProcess, INFINITE);
@@ -59,8 +44,9 @@ int main()
 	if (!GetExitCodeProcess(pi.hProcess, &exitCode)) {
 		printf("GetExitCodeProcess failed"); return -1;
 	}
-	delete[] newcmd;
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
+	printf("waitrun: press some key to exit...\n");
+	_getch();
 	return exitCode;
 }
